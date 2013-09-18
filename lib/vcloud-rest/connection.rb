@@ -951,7 +951,7 @@ module VCloudClient
 
     ##
     # Set VM Network Config
-    def set_vm_network_config(vmid, network_name, config={})
+    def set_vm_network_config(vmid, network_name, network_2_name, config={})
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.NetworkConnectionSection(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -964,6 +964,12 @@ module VCloudClient
           xml.IsConnected(config[:is_connected] || true)
           xml.IpAddressAllocationMode config[:ip_allocation_mode] if config[:ip_allocation_mode]
         }
+        xml.NetworkConnection("network" => network_2_name, "needsCustomization" => true){
+          xml.NetworkConnectionIndex(config[:network_2_index] || 0)
+          xml.IpAddress config[:ip_2] if config[:ip_2]
+          xml.IsConnected(config[:is_2_connected] || true)
+          xml.IpAddressAllocationMode config[:ip_2_allocation_mode] if config[:ip_2_allocation_mode]
+        } if network_2_name != nil
       }
       end
 
