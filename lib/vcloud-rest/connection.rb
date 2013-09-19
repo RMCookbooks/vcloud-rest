@@ -951,6 +951,30 @@ module VCloudClient
       task_id
     end
 
+    # Boot a given vm
+    def poweron_vm(vmId)
+      params = {
+        'method' => :post,
+        'command' => "/vApp/vm-#{vmId}/power/action/powerOn"
+      }
+
+      response, headers = send_request(params)
+      task_id = headers[:location].gsub("#{@api_url}/task/", "")
+      task_id
+    end
+
+    # Stop a given vm
+    def poweroff_vm(vmId)
+      params = {
+        'method' => :post,
+        'command' => "/vApp/vm-#{vmId}/power/action/powerOff"
+      }
+
+      response, headers = send_request(params)
+      task_id = headers[:location].gsub("#{@api_url}/task/", "")
+      task_id
+    end
+
     ##
     # Set VM Network Config
     def set_vm_network_config(vmid, network_name, network2_name, config={})
