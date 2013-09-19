@@ -910,6 +910,8 @@ module VCloudClient
         break if task[:status] != 'running'
         sleep 1
       end
+      
+      task = get_task(taskid)
 
       if task[:status] == 'error'
         errormsg = task[:response].css("Error").first
