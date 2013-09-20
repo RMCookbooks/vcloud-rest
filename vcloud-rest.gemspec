@@ -11,7 +11,7 @@ Gem::Specification.new do |s|
 
   s.add_dependency "nokogiri", "~> 1.5.0"
   s.add_dependency "rest-client", "~> 1.6.7"
-  s.add_dependency "httpclient", " ~> 2.3.3"
+  s.add_dependency "httpclient", " ~> 2.2.0.2"
   s.add_dependency "ruby-progressbar", "~> 1.1.1"
 
   s.require_path = 'lib'
