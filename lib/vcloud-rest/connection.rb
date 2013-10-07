@@ -484,12 +484,12 @@ module VCloudClient
     # - vapp_templateid: ID of the vapp template
     def create_vapp_from_template(vdc, vapp_name, vapp_description, vapp_templateid, config, poweron=false)
       #Get network ID 
-      puts vdc_net = get_vdc(vdc)
-         puts net = vdc_net[:networks]
-         puts parent_net1 = net["#{config[:name]}"]
-         puts parent_net2 = net["#{config[:name_net2]}"]
-
-
+      #puts vdc_net = get_vdc(vdc)
+      #   puts net = vdc_net[:networks]
+      #   puts parent_net1 = net["#{config[:name]}"]
+      #   puts parent_net2 = net["#{config[:name_net2]}"]
+      
+      #Builds xml for vapp include network
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.InstantiateVAppTemplateParams(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -528,8 +528,8 @@ module VCloudClient
       }
 
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml")
-      puts headers.inspect
-      puts response.inspect
+      #puts headers.inspect
+      #puts response.inspect
 
 
       vapp_id = headers[:location].gsub("#{@api_url}/vApp/vapp-", "")
