@@ -349,6 +349,7 @@ module VCloudClient
       }
 
       response, headers = send_request(params)
+      puts response.to_xml
 
       vapp_node = response.css('VApp').first
       if vapp_node
@@ -481,7 +482,14 @@ module VCloudClient
     # - vapp_name: name of the target vapp
     # - vapp_description: description of the target vapp
     # - vapp_templateid: ID of the vapp template
-    def create_vapp_from_template(vdc, vapp_name, vapp_description, vapp_templateid, poweron=false)
+    def create_vapp_from_template(vdc, vapp_name, vapp_description, vapp_templateid, config, poweron=false)
+      #Get network ID 
+      puts vdc_net = get_vdc(vdc)
+         puts net = vdc_net[:networks]
+         puts parent_net1 = net["#{config[:name]}"]
+         puts parent_net2 = net["#{config[:name_net2]}"]
+
+
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.InstantiateVAppTemplateParams(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -491,6 +499,25 @@ module VCloudClient
         "deploy" => "true",
         "powerOn" => poweron) {
         xml.Description vapp_description
+        xml.InstantiationParams {
+          xml.NetworkConfigSection {
+            xml['ovf'].Info "Configuration parameters for logical networks"
+            xml.NetworkConfig("networkName" => config[:name]) {
+              xml.Configuration {
+                xml.ParentNetwork("href" => "#{@api_url}/admin/network/#{parent_net1}")
+                xml.FenceMode config[:fence_mode]
+
+                }
+              }
+            xml.NetworkConfig("networkName" => config[:name_2]) {
+              xml.Configuration {
+                xml.ParentNetwork("href" => "#{@api_url}/admin/network/#{parent_net2}")
+                xml.FenceMode config[:fence_mode]
+
+                }
+              } if config[:name_net2] != nil
+            }
+          }
         xml.Source("href" => "#{@api_url}/vAppTemplate/#{vapp_templateid}")
       }
       end
@@ -501,9 +528,13 @@ module VCloudClient
       }
 
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.instantiateVAppTemplateParams+xml")
+      puts headers.inspect
+      puts response.inspect
+
 
       vapp_id = headers[:location].gsub("#{@api_url}/vApp/vapp-", "")
-
+       
+      
       task = response.css("VApp Task[operationName='vdcInstantiateVapp']").first
       task_id = task["href"].gsub("#{@api_url}/task/", "")
 
@@ -924,7 +955,7 @@ module VCloudClient
 
     ##
     # Set vApp Network Config
-    def set_vapp_network_config(vappid, network_name, config={})
+    def set_vapp_network_config(vappid, network_name, network_name2, config={})
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.NetworkConfigSection(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -932,10 +963,17 @@ module VCloudClient
         xml['ovf'].Info "Network configuration"
         xml.NetworkConfig("networkName" => network_name) {
           xml.Configuration {
-            xml.FenceMode(config[:fence_mode] || 'isolated')
+            xml.FenceMode(config[:fence_mode] || 'bridged')
             xml.RetainNetInfoAcrossDeployments(config[:retain_net] || false)
-            xml.ParentNetwork("href" => config[:parent_network])
+            #xml.ParentNetwork("href" => config[:parent_network])
           }
+        }
+        xml.NetworkConfig("networkName" => network_name2) {
+          xml.Configuration {
+            xml.FenceMode(config[:fence_mode2] || 'bridged')
+            xml.RetainNetInfoAcrossDeployments(config[:retain_net] || false)
+            #xml.ParentNetwork("href" => config[:parent_network2])
+          } if network_name2 != nil
         }
       }
       end
@@ -946,7 +984,7 @@ module VCloudClient
       }
 
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.networkConfigSection+xml")
-
+      puts response.inspect
       task_id = headers[:location].gsub("#{@api_url}/task/", "")
       task_id
     end
@@ -991,7 +1029,7 @@ module VCloudClient
           xml.IpAddressAllocationMode config[:ip_allocation_mode] if config[:ip_allocation_mode]
         }
         xml.NetworkConnection("network" => network2_name, "needsCustomization" => true){
-          xml.NetworkConnectionIndex(config[:network_2_index] || 0)
+          xml.NetworkConnectionIndex(config[:network_2_index])
           xml.IpAddress config[:ip_2] if config[:ip_2]
           xml.IsConnected(config[:is_2_connected] || true)
           xml.IpAddressAllocationMode config[:ip_2_allocation_mode] if config[:ip_2_allocation_mode]
@@ -1003,7 +1041,6 @@ module VCloudClient
         'method' => :put,
         'command' => "/vApp/vm-#{vmid}/networkConnectionSection"
       }
-
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.networkConnectionSection+xml")
 
       task_id = headers[:location].gsub("#{@api_url}/task/", "")
