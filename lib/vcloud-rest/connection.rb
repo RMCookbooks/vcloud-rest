@@ -360,8 +360,12 @@ module VCloudClient
       description = response.css("Description").first
       description = description.text unless description.nil?
 
-      ip = response.css('IpAddress').first
-      ip = ip.text unless ip.nil?
+      ip1 = response.css('IpAddress').first
+      ip1 = ip1.text unless ip1.nil?
+      ip2 = response.css('IpAddress').last
+      ip2 = ip2.text unless ip2.nil?
+      ip = "#{ip2} #{ip1}"
+      
 
       vms = response.css('Children Vm')
       vms_hash = {}
@@ -484,10 +488,10 @@ module VCloudClient
     # - vapp_templateid: ID of the vapp template
     def create_vapp_from_template(vdc, vapp_name, vapp_description, vapp_templateid, config, poweron=false)
       #Get network ID 
-      #puts vdc_net = get_vdc(vdc)
-      #   puts net = vdc_net[:networks]
-      #   puts parent_net1 = net["#{config[:name]}"]
-      #   puts parent_net2 = net["#{config[:name_net2]}"]
+      vdc_net = get_vdc(vdc)
+      net = vdc_net[:networks]
+      parent_net1 = net["#{config[:name]}"]
+      parent_net2 = net["#{config[:name_net2]}"]
       
       #Builds xml for vapp include network
       builder = Nokogiri::XML::Builder.new do |xml|
