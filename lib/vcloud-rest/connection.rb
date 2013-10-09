@@ -349,7 +349,7 @@ module VCloudClient
       }
 
       response, headers = send_request(params)
-      puts response.to_xml
+      #puts response.to_xml
 
       vapp_node = response.css('VApp').first
       if vapp_node
@@ -360,11 +360,10 @@ module VCloudClient
       description = response.css("Description").first
       description = description.text unless description.nil?
 
-      ip1 = response.css('IpAddress').first
+      ip1 = response.css('IpAddress').last
       ip1 = ip1.text unless ip1.nil?
-      ip2 = response.css('IpAddress').last
+      ip2 = response.css('IpAddress').first
       ip2 = ip2.text unless ip2.nil?
-      ip = "#{ip2} #{ip1}"
       
 
       vms = response.css('Children Vm')
@@ -383,7 +382,7 @@ module VCloudClient
       end
 
       # TODO: EXPAND INFO FROM RESPONSE
-      { :name => name, :description => description, :status => status, :ip => ip, :vms_hash => vms_hash }
+      { :name => name, :description => description, :status => status, :ip1 => ip1, :ip2 => ip2, :vms_hash => vms_hash }
     end
 
     ##
