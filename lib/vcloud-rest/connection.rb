@@ -20,6 +20,7 @@ require 'rest-client'
 require 'nokogiri'
 require 'httpclient'
 require 'ruby-progressbar'
+require 'uri'
 
 module VCloudClient
   class UnauthorizedAccess < StandardError; end
@@ -114,14 +115,20 @@ module VCloudClient
     # friendly helper method to fetch an Organization by name
     # - name (this isn't case sensitive)
     def get_organization_by_name(name)
+      puts name
       result = nil
 
       # Fetch all organizations
       organizations = get_organizations()
+      puts organizations
 
       organizations.each do |organization|
         if organization[0].downcase == name.downcase
-          result = get_organization(organization[1])
+        
+          uri = organization[1]
+          orgid = URI(uri).path.split('/').last
+          
+          result = get_organization(orgid)
         end
       end
       result
@@ -256,16 +263,21 @@ module VCloudClient
       result
     end
 
-    ##
-    # Friendly helper method to fetch a Organization VDC by name
+    #
+    # Friendl/y helper method to fetch a Organization VDC by name
     # - Organization object
     # - Organization VDC Name
     def get_vdc_by_name(organization, vdcName)
       result = nil
-
+      puts organization
       organization[:vdcs].each do |vdc|
+        puts vdc
+        puts "t"
         if vdc[0].downcase == vdcName.downcase
-          result = get_vdc(vdc[1])
+          uri = vdc[1]
+          vdcid = URI(uri).path.split('/').last
+
+          result = get_vdc(vdcid)
         end
       end
 
@@ -293,9 +305,13 @@ module VCloudClient
     # - vApp name
     def get_vapp_by_name(organization, vdcName, vAppName)
       result = nil
+      puts organization
+      puts vdcName
+      puts vAppName
+      puts 'z'
 
       get_vdc_by_name(organization, vdcName)[:vapps].each do |vapp|
-    
+        puts vapp
         if vapp[0].downcase == vAppName.downcase
           result = vapp #get_vapp(vapp[1])
         end
@@ -375,9 +391,12 @@ module VCloudClient
     #   -- status
     #   -- ID
     def get_vapp(vAppId)
+      
+      uri = vAppId
+      vAppId = URI(uri).path.split('/').last
       params = {
         'method' => :get,
-        'command' => "/vApp/vapp-#{vAppId}"
+        'command' => "/vApp/#{vAppId}"
       }
 
       response, headers = send_request(params)
@@ -421,9 +440,10 @@ module VCloudClient
     # Delete a given vapp
     # NOTE: It doesn't verify that the vapp is shutdown
     def delete_vapp(vAppId)
+     puts vAppId
       params = {
         'method' => :delete,
-        'command' => "/vApp/vapp-#{vAppId}"
+        'command' => "/vApp/#{vAppId}"
       }
 
       response, headers = send_request(params)
@@ -434,6 +454,8 @@ module VCloudClient
     ##
     # Shutdown a given vapp
     def poweroff_vapp(vAppId)
+      uri = vAppId
+      vAppId = URI(uri).path.split('/').last
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.UndeployVAppParams(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5") {
@@ -443,7 +465,7 @@ module VCloudClient
 
       params = {
         'method' => :post,
-        'command' => "/vApp/vapp-#{vAppId}/action/undeploy"
+        'command' => "/vApp/#{vAppId}/action/undeploy"
       }
 
       response, headers = send_request(params, builder.to_xml,
@@ -499,9 +521,11 @@ module VCloudClient
     ##
     # Boot a given vapp
     def poweron_vapp(vAppId)
+      uri = vAppId
+      vAppId = URI(uri).path.split('/').last
       params = {
         'method' => :post,
-        'command' => "/vApp/vapp-#{vAppId}/power/action/powerOn"
+        'command' => "/vApp/#{vAppId}/power/action/powerOn"
       }
 
       response, headers = send_request(params)
@@ -969,6 +993,8 @@ module VCloudClient
     ##
     # Poll a given task until completion
     def wait_task_completion(taskid)
+      
+      taskid = URI(taskid).path.split('/').last
       errormsg = nil
 
       loop do
@@ -1051,6 +1077,8 @@ module VCloudClient
     ##
     # Set VM Network Config
     def set_vm_network_config(vmid, network_name, network2_name, config={})
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.NetworkConnectionSection(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -1074,7 +1102,7 @@ module VCloudClient
 
       params = {
         'method' => :put,
-        'command' => "/vApp/vm-#{vmid}/networkConnectionSection"
+        'command' => "/vApp/#{vmid}/networkConnectionSection"
       }
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.networkConnectionSection+xml")
 
@@ -1086,6 +1114,8 @@ module VCloudClient
     ##
     # Set VM Guest Customization Config
     def set_vm_guest_customization(vmid, computer_name, config={})
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       builder = Nokogiri::XML::Builder.new do |xml|
       xml.GuestCustomizationSection(
         "xmlns" => "http://www.vmware.com/vcloud/v1.5",
@@ -1100,7 +1130,7 @@ module VCloudClient
 
       params = {
         'method' => :put,
-        'command' => "/vApp/vm-#{vmid}/guestCustomizationSection"
+        'command' => "/vApp/#{vmid}/guestCustomizationSection"
       }
 
       response, headers = send_request(params, builder.to_xml, "application/vnd.vmware.vcloud.guestCustomizationSection+xml")
@@ -1110,6 +1140,8 @@ module VCloudClient
     end
 
     def set_vm_disk_info(vmid, disk_info={})
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       get_response, headers = __get_disk_info(vmid)
 
       if disk_info[:add]
@@ -1120,7 +1152,7 @@ module VCloudClient
 
       params = {
         'method' => :put,
-        'command' => "/vApp/vm-#{vmid}/virtualHardwareSection/disks"
+        'command' => "/vApp/#{vmid}/virtualHardwareSection/disks"
       }
       put_response, headers = send_request(params, data, "application/vnd.vmware.vcloud.rasdItemsList+xml")
 
@@ -1130,9 +1162,11 @@ module VCloudClient
 
      # Set VM CPUs
     def set_vm_cpus(vmid, cpu_number)
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       params = {
         'method' => :get,
-        'command' => "/vApp/vm-#{vmid}/virtualHardwareSection/cpu"
+        'command' => "/vApp/#{vmid}/virtualHardwareSection/cpu"
       }
 
       get_response, headers = send_request(params)
@@ -1151,9 +1185,11 @@ module VCloudClient
     ##
     # Set VM RAM
     def set_vm_ram(vmid, memory_size)
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       params = {
         'method' => :get,
-        'command' => "/vApp/vm-#{vmid}/virtualHardwareSection/memory"
+        'command' => "/vApp/#{vmid}/virtualHardwareSection/memory"
       }
 
       get_response, headers = send_request(params)
@@ -1176,9 +1212,11 @@ module VCloudClient
     ##
     # Fetch details about a given VM
     def get_vm(vmId)
+      uri = vmid
+      vmid = URI(uri).path.split('/').last
       params = {
         'method' => :get,
-        'command' => "/vApp/vm-#{vmId}"
+        'command' => "/vApp/#{vmId}"
       }
 
       response, headers = send_request(params)
