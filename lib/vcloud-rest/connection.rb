@@ -440,7 +440,8 @@ module VCloudClient
     # Delete a given vapp
     # NOTE: It doesn't verify that the vapp is shutdown
     def delete_vapp(vAppId)
-     puts vAppId
+     uri = vAppId
+     vAppId = URI(uri).path.split('/').last
       params = {
         'method' => :delete,
         'command' => "/vApp/#{vAppId}"
